@@ -2,6 +2,21 @@ import { useEffect, useState } from 'preact/hooks'
 import type { User } from '@supabase/supabase-js'
 import { StarBackground } from './StarBackground'
 import {
+  GamepadIcon,
+  CartIcon,
+  FlameIcon,
+  JoystickIcon,
+  StarIcon,
+  NewspaperIcon,
+  CalendarIcon,
+  RocketIcon,
+  CheckCircleIcon,
+  CheckIcon,
+  PlusIcon,
+  SparklesIcon,
+  CloseIcon
+} from './components/icons'
+import {
   fetchGamesFromSupabase,
   fetchNewsFromSupabase,
   saveNewsletterSubscriber,
@@ -252,7 +267,7 @@ export function App() {
       return
     }
     setCart([...cart, game])
-    showToast(`¡"${game.title}" agregado al carrito!`)
+    showToast(`"${game.title}" agregado al carrito`)
   }
 
   const removeFromCart = (gameId: string) => {
@@ -302,7 +317,9 @@ export function App() {
       {/* Barra de navegación superior */}
       <header className="navbar">
         <a href="#" className="nav-brand">
-          <div className="brand-icon">🎮</div>
+          <div className="brand-icon">
+            <GamepadIcon size={22} />
+          </div>
           <div className="brand-name">
             NEXUS<span>GAMES</span>
             <span className="brand-badge">Store & News</span>
@@ -328,11 +345,15 @@ export function App() {
                 border: '1px solid rgba(16, 185, 129, 0.3)',
                 padding: '4px 8px',
                 borderRadius: '12px',
-                fontWeight: 600
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
               }}
               title="Base de datos Supabase conectada y sincronizada"
             >
-              ● Supabase DB
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+              Supabase DB
             </span>
           )}
 
@@ -399,7 +420,8 @@ export function App() {
             onClick={() => setIsCartOpen(true)}
             aria-label="Abrir carrito de compras"
           >
-            🛒 Carrito
+            <CartIcon size={16} />
+            <span>Carrito</span>
             {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
           </button>
         </div>
@@ -410,7 +432,10 @@ export function App() {
         {/* Banner Hero Principal */}
         <section id="destacado" className="hero-banner">
           <div className="hero-info">
-            <span className="hero-tag">🔥 Novedad de la Semana</span>
+            <span className="hero-tag">
+              <FlameIcon size={14} />
+              <span>Novedad de la Semana</span>
+            </span>
             <h1 className="hero-title">CYBER ODYSSEY 2077: NEON EDGE</h1>
             <p className="hero-desc">
               Explora una megalópolis futurista viva con trazado de rayos de próxima generación, 
@@ -463,7 +488,10 @@ export function App() {
           <div className="section-header">
             <div className="section-title-wrap">
               <span className="section-badge">Catálogo Exclusivo</span>
-              <h2 className="section-title">🕹️ Venta de Videojuegos</h2>
+              <h2 className="section-title">
+                <JoystickIcon size={26} />
+                <span>Venta de Videojuegos</span>
+              </h2>
             </div>
           </div>
 
@@ -495,7 +523,10 @@ export function App() {
                       loading="lazy"
                     />
                     <span className="game-card-discount">-{game.discount}%</span>
-                    <span className="game-card-rating">★ {game.rating.toFixed(1)}</span>
+                    <span className="game-card-rating">
+                      <StarIcon size={13} />
+                      <span>{game.rating.toFixed(1)}</span>
+                    </span>
                   </div>
 
                   <div className="game-card-body">
@@ -525,7 +556,17 @@ export function App() {
                         className={`btn-buy ${inCart ? 'in-cart' : ''}`}
                         onClick={() => addToCart(game)}
                       >
-                        {inCart ? '✓ En Carrito' : '+ Agregar'}
+                        {inCart ? (
+                          <>
+                            <CheckIcon size={14} />
+                            <span>En Carrito</span>
+                          </>
+                        ) : (
+                          <>
+                            <PlusIcon size={14} />
+                            <span>Agregar</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -540,7 +581,10 @@ export function App() {
           <div className="section-header">
             <div className="section-title-wrap">
               <span className="section-badge">Última Hora</span>
-              <h2 className="section-title">📰 Novedades y Noticias Gamer</h2>
+              <h2 className="section-title">
+                <NewspaperIcon size={26} />
+                <span>Novedades y Noticias Gamer</span>
+              </h2>
             </div>
           </div>
 
@@ -557,7 +601,10 @@ export function App() {
                   <span className="news-category-badge">{article.category}</span>
                 </div>
                 <div className="news-content">
-                  <span className="news-date">📅 {article.date}</span>
+                  <span className="news-date">
+                    <CalendarIcon size={13} />
+                    <span>{article.date}</span>
+                  </span>
                   <h3 className="news-title">{article.title}</h3>
                   <p className="news-excerpt">{article.excerpt}</p>
                   <a href="#noticias" className="news-link">
@@ -571,14 +618,28 @@ export function App() {
 
         {/* Sección Club VIP / Newsletter */}
         <section id="club" className="vip-banner">
-          <h2 className="vip-title">🚀 Únete al Club Galáctico</h2>
+          <h2 className="vip-title">
+            <RocketIcon size={26} />
+            <span>Únete al Club Galáctico</span>
+          </h2>
           <p className="vip-desc">
             Recibe alertas prioritarias sobre ofertas relámpago, claves de acceso a betas privadas
             y los resúmenes semanales de las mayores novedades de la industria.
           </p>
           {emailSubscribed ? (
-            <p style={{ color: '#10b981', fontWeight: 700, fontSize: '16px' }}>
-              🎉 ¡Te has suscrito con éxito! Pronto recibirás tus primeros beneficios gamer.
+            <p
+              style={{
+                color: '#10b981',
+                fontWeight: 700,
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <CheckCircleIcon size={20} />
+              <span>¡Te has suscrito con éxito! Pronto recibirás tus primeros beneficios gamer.</span>
             </p>
           ) : (
             <form className="vip-form" onSubmit={handleNewsletterSubmit}>
@@ -608,8 +669,9 @@ export function App() {
                 type="button"
                 className="modal-close"
                 onClick={() => setIsCartOpen(false)}
+                aria-label="Cerrar carrito"
               >
-                ✕
+                <CloseIcon size={18} />
               </button>
             </div>
 
@@ -666,7 +728,12 @@ export function App() {
       )}
 
       {/* Toast Notification */}
-      {toast && <div className="toast">✨ {toast}</div>}
+      {toast && (
+        <div className="toast">
+          <SparklesIcon size={18} />
+          <span>{toast}</span>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="footer">
