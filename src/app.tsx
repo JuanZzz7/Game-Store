@@ -1,5 +1,12 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { StarBackground } from './StarBackground'
+import {
+  fetchGamesFromSupabase,
+  fetchNewsFromSupabase,
+  saveNewsletterSubscriber,
+  saveOrder,
+  isSupabaseConfigured
+} from './lib/supabase'
 import './app.css'
 
 interface Game {
@@ -24,7 +31,7 @@ interface NewsItem {
   image: string
 }
 
-const FEATURED_GAMES: Game[] = [
+const DEFAULT_GAMES: Game[] = [
   {
     id: 'g1',
     title: 'Elden Ring: Shadow of the Erdtree',
@@ -123,7 +130,7 @@ const FEATURED_GAMES: Game[] = [
   }
 ]
 
-const NEWS_ARTICLES: NewsItem[] = [
+const DEFAULT_NEWS: NewsItem[] = [
   {
     id: 'n1',
     title: 'Nueva actualización masiva de Unreal Engine 5.5 llega con trazado de luces en tiempo real ultraoptimizado',
@@ -153,12 +160,64 @@ const NEWS_ARTICLES: NewsItem[] = [
 const CATEGORIES = ['Todos', 'RPG', 'Sci-Fi', 'Shooter', 'Aventura', 'Acción']
 
 export function App() {
+  const [games, setGames] = useState<Game[]>(DEFAULT_GAMES)
+  const [news, setNews] = useState<NewsItem[]>(DEFAULT_NEWS)
+  const [isLiveConnected, setIsLiveConnected] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [cart, setCart] = useState<Game[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [emailSubscribed, setEmailSubscribed] = useState(false)
   const [emailInput, setEmailInput] = useState('')
+
+  // Cargar datos desde Supabase
+  useEffect(() => {
+    async function loadRemoteData() {
+      if (!isSupabaseConfigured) return
+
+      try {
+        const [remoteGames, remoteNews] = await Promise.all([
+          fetchGamesFromSupabase(),
+          fetchNewsFromSupabase()
+        ])
+
+        if (remoteGames && remoteGames.length > 0) {
+          setGames(
+            remoteGames.map((g) => ({
+              id: g.id,
+              title: g.title,
+              genre: g.genre,
+              category: g.category,
+              platforms: g.platforms || [],
+              rating: Number(g.rating),
+              price: Number(g.price),
+              originalPrice: Number(g.original_price),
+              discount: Number(g.discount),
+              image: g.image_url
+            }))
+          )
+          setIsLiveConnected(true)
+        }
+
+        if (remoteNews && remoteNews.length > 0) {
+          setNews(
+            remoteNews.map((n) => ({
+              id: n.id,
+              title: n.title,
+              category: n.category,
+              date: n.published_date,
+              excerpt: n.excerpt,
+              image: n.image_url
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Error al sincronizar con Supabase:', err)
+      }
+    }
+
+    loadRemoteData()
+  }, [])
 
   const showToast = (message: string) => {
     setToast(message)
@@ -180,10 +239,37 @@ export function App() {
     setCart(cart.filter((item) => item.id !== gameId))
   }
 
+  const handleCheckout = async () => {
+    const currentCart = [...cart]
+    setCart([])
+    setIsCartOpen(false)
+    showToast('¡Compra realizada con éxito! Disfruta tus juegos.')
+
+    if (isSupabaseConfigured) {
+      await saveOrder({
+        total: cartTotal,
+        items: currentCart.map((c) => ({ id: c.id, title: c.title, price: c.price }))
+      })
+    }
+  }
+
+  const handleNewsletterSubmit = async (e: Event) => {
+    e.preventDefault()
+    if (emailInput.trim()) {
+      const email = emailInput.trim()
+      setEmailSubscribed(true)
+      showToast('¡Te has suscrito al Club VIP!')
+
+      if (isSupabaseConfigured) {
+        await saveNewsletterSubscriber(email)
+      }
+    }
+  }
+
   const filteredGames =
     selectedCategory === 'Todos'
-      ? FEATURED_GAMES
-      : FEATURED_GAMES.filter((g) => g.category === selectedCategory)
+      ? games
+      : games.filter((g) => g.category === selectedCategory)
 
   const cartTotal = cart.reduce((acc, curr) => acc + curr.price, 0)
 
@@ -212,6 +298,23 @@ export function App() {
         </nav>
 
         <div className="nav-actions">
+          {isLiveConnected && (
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#10b981',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontWeight: 600
+              }}
+              title="Base de datos Supabase conectada y sincronizada"
+            >
+              ● Supabase DB
+            </span>
+          )}
+
           <button
             type="button"
             className="cart-button"
@@ -364,7 +467,7 @@ export function App() {
           </div>
 
           <div className="news-grid">
-            {NEWS_ARTICLES.map((article) => (
+            {news.map((article) => (
               <article key={article.id} className="news-card">
                 <div className="news-thumb-wrap">
                   <img
@@ -400,16 +503,7 @@ export function App() {
               🎉 ¡Te has suscrito con éxito! Pronto recibirás tus primeros beneficios gamer.
             </p>
           ) : (
-            <form
-              className="vip-form"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (emailInput.trim()) {
-                  setEmailSubscribed(true)
-                  showToast('¡Te has suscrito al Club VIP!')
-                }
-              }}
-            >
+            <form className="vip-form" onSubmit={handleNewsletterSubmit}>
               <input
                 type="email"
                 required
@@ -483,11 +577,7 @@ export function App() {
                   type="button"
                   className="btn-primary"
                   style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => {
-                    setCart([])
-                    setIsCartOpen(false)
-                    showToast('¡Compra realizada con éxito! Disfruta tus juegos.')
-                  }}
+                  onClick={handleCheckout}
                 >
                   Finalizar Compra
                 </button>
