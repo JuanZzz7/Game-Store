@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -45,7 +46,51 @@ export interface NewsRecord {
   image_url: string
 }
 
-// Servicios de datos para la aplicación
+// ==========================================
+// AUTENTICACIÓN CON GOOGLE (OAuth)
+// ==========================================
+
+export async function signInWithGoogle(): Promise<{ error: Error | null }> {
+  if (!supabase) {
+    return {
+      error: new Error('Supabase no está configurado. Revisa tu archivo .env.local')
+    }
+  }
+
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+
+    return { error: error ? new Error(error.message) : null }
+  } catch (err: any) {
+    return { error: err }
+  }
+}
+
+export async function signOutUser(): Promise<{ error: Error | null }> {
+  if (!supabase) return { error: null }
+  const { error } = await supabase.auth.signOut()
+  return { error: error ? new Error(error.message) : null }
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  if (!supabase) return null
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    return user
+  } catch {
+    return null
+  }
+}
+
+// ==========================================
+// SERVICIOS DE DATOS
+// ==========================================
+
 export async function fetchGamesFromSupabase(): Promise<GameRecord[] | null> {
   if (!supabase) return null
 
